@@ -1,0 +1,13 @@
+# Runtime uploads (keep upload security config)
+uploads/*
+!uploads/.htaccess
+
+# Environment & local config overrides
+.env
+.env.*
+
+# Logs & OS junk
+*.log
+.DS_Store
+Thumbs.db
+desktop.ini
