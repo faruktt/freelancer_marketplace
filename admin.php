@@ -173,10 +173,12 @@ require_once __DIR__ . '/includes/header.php';
 
       <?php elseif ($tab === 'users'):
         $roleFilter = $_GET['role'] ?? '';
+        $userStatusFilter = $_GET['user_status'] ?? '';
         $where = ['1=1'];
         $params = [];
         if ($q !== '') { $where[] = '(name LIKE ? OR email LIKE ? OR username LIKE ?)'; array_push($params, "%$q%", "%$q%", "%$q%"); }
         if ($roleFilter !== '') { $where[] = 'role = ?'; $params[] = $roleFilter; }
+        if ($userStatusFilter !== '') { $where[] = 'status = ?'; $params[] = $userStatusFilter; }
         $uStmt = $pdo->prepare('SELECT * FROM users WHERE ' . implode(' AND ', $where) . ' ORDER BY id DESC');
         $uStmt->execute($params);
         $users = $uStmt->fetchAll();
@@ -190,9 +192,15 @@ require_once __DIR__ . '/includes/header.php';
                 <a href="admin.php?tab=users&role=seller" class="tab-btn <?= $roleFilter === 'seller' ? 'active' : '' ?>">Sellers</a>
                 <a href="admin.php?tab=users&role=admin" class="tab-btn <?= $roleFilter === 'admin' ? 'active' : '' ?>">Admins</a>
               </div>
-              <form style="display:flex;gap:8px;" method="get">
+              <form style="display:flex;gap:8px;align-items:center;" method="get">
                 <input type="hidden" name="tab" value="users">
                 <?php if ($roleFilter !== ''): ?><input type="hidden" name="role" value="<?= e($roleFilter) ?>"><?php endif; ?>
+                <select name="user_status" onchange="this.form.submit()" class="select-sm">
+                  <option value="">All Statuses</option>
+                  <option value="active" <?= $userStatusFilter === 'active' ? 'selected' : '' ?>>Active</option>
+                  <option value="suspended" <?= $userStatusFilter === 'suspended' ? 'selected' : '' ?>>Inactive (Suspended)</option>
+                  <option value="banned" <?= $userStatusFilter === 'banned' ? 'selected' : '' ?>>Banned</option>
+                </select>
                 <input type="search" name="q" value="<?= e($q) ?>" class="input-sm" placeholder="Search buyers &amp; sellers...">
               </form>
             </div>
@@ -210,11 +218,11 @@ require_once __DIR__ . '/includes/header.php';
                   <tr>
                     <td>
                       <div style="display:flex;align-items:center;gap:9px;">
-                        <img src="<?= e($u['avatar'] ?: 'assets/images/avatar-1.jpg') ?>" class="avatar" alt="">
+                        <img src="<?= e(avatar_url($u['avatar'])) ?>" class="avatar" alt="">
                         <div>
                           <div style="font-weight:700;display:flex;align-items:center;gap:4px;">
                             <a href="profile.php?u=<?= e($u['username']) ?>"><?= e($u['name']) ?></a>
-                            <?php if ((int)$u['is_verified'] === 1): ?><span class="ms ms-sm ms-fill" style="color:var(--primary);">verified</span><?php endif; ?>
+                            <?php if ($u['seller_level'] === 'pro' && (int)$u['is_verified'] === 1): ?><span class="ms ms-sm ms-fill" style="color:var(--primary);" title="Pro Verified">verified</span><?php endif; ?>
                           </div>
                           <div class="muted" style="font-size:11.5px;"><?= e($u['email']) ?></div>
                         </div>
@@ -222,11 +230,26 @@ require_once __DIR__ . '/includes/header.php';
                     </td>
                     <td>
                       <span class="badge badge-indigo" style="text-transform:capitalize;"><?= e($u['role']) ?></span>
-                      <span class="muted" style="font-size:11.5px;">· <?= e($u['seller_level']) ?></span>
+                      <?php if ($u['seller_level'] === 'pro'): ?>
+                        <span class="badge badge-emerald" style="font-size:10.5px;padding:2px 7px;">PRO VERIFIED</span>
+                      <?php else: ?>
+                        <span class="muted" style="font-size:11.5px;">· <?= e($u['seller_level']) ?></span>
+                      <?php endif; ?>
                     </td>
-                    <td class="mono" style="font-weight:700;"><?= money($u['wallet_balance']) ?></td>
+                    <td class="mono" style="font-weight:700;"><?= $u['role'] === 'admin' ? '<span class="muted">—</span>' : money($u['wallet_balance']) ?></td>
                     <td><span class="badge <?= $sc ?>"><?= $sl ?></span></td>
                     <td style="text-align:right;white-space:nowrap;">
+                      <?php if ((int)$u['id'] !== (int)$admin['id']): ?>
+                        <?php if ($u['status'] === 'active'): ?>
+                          <button type="button" class="btn btn-amber btn-sm" onclick="adminPost('user_status', {id: <?= (int)$u['id'] ?>, status: 'suspended'}, 'Make this user inactive?')">
+                            <span class="ms ms-sm">pause_circle</span> Inactive
+                          </button>
+                        <?php else: ?>
+                          <button type="button" class="btn btn-emerald btn-sm" onclick="adminPost('user_status', {id: <?= (int)$u['id'] ?>, status: 'active'}, 'Activate this user?')">
+                            <span class="ms ms-sm">play_circle</span> Active
+                          </button>
+                        <?php endif; ?>
+                      <?php endif; ?>
                       <button type="button" class="btn btn-outline btn-sm" onclick='openUserEdit(<?= json_encode([
                         "id" => (int)$u["id"], "name" => $u["name"], "role" => $u["role"],
                         "status" => $u["status"], "seller_level" => $u["seller_level"],
@@ -254,7 +277,7 @@ require_once __DIR__ . '/includes/header.php';
         $gStmt = $pdo->prepare("SELECT g.*, c.name AS category_name, u.name AS seller_name FROM gigs g JOIN categories c ON c.id = g.category_id JOIN users u ON u.id = g.seller_id WHERE " . implode(' AND ', $where) . " ORDER BY (g.status = 'pending') DESC, g.id DESC");
         $gStmt->execute($params);
         $gigs = $gStmt->fetchAll();
-        $allCats = $pdo->query('SELECT id, name FROM categories ORDER BY sort_order ASC, id ASC')->fetchAll();
+        $allCats = $pdo->query('SELECT id, name FROM categories WHERE is_active = 1 ORDER BY sort_order ASC, id ASC')->fetchAll();
       ?>
         <div class="card">
           <div style="padding:14px 16px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px;align-items:center;">
@@ -302,12 +325,15 @@ require_once __DIR__ . '/includes/header.php';
                         "price" => (float)$g["price"], "delivery_days" => (int)$g["delivery_days"],
                         "status" => $g["status"], "is_featured" => (int)$g["is_featured"]
                       ]) ?>)'>Edit</button>
-                      <?php if ($g['status'] !== 'active'): ?>
-                        <button type="button" class="btn btn-emerald btn-sm" onclick="adminPost('gig_status', {id: <?= (int)$g['id'] ?>, status: 'active'})">Approve</button>
+                      <?php if ($g['status'] === 'active'): ?>
+                        <button type="button" class="btn btn-amber btn-sm" onclick="adminPost('gig_status', {id: <?= (int)$g['id'] ?>, status: 'paused'}, 'Make this gig inactive?')">
+                          <span class="ms ms-sm">pause_circle</span> Inactive
+                        </button>
                       <?php else: ?>
-                        <button type="button" class="btn btn-outline btn-sm" onclick="adminPost('gig_status', {id: <?= (int)$g['id'] ?>, status: 'paused'})">Pause</button>
+                        <button type="button" class="btn btn-emerald btn-sm" onclick="adminPost('gig_status', {id: <?= (int)$g['id'] ?>, status: 'active'}, 'Activate this gig?')">
+                          <span class="ms ms-sm">check_circle</span> Active
+                        </button>
                       <?php endif; ?>
-                      <button type="button" class="btn btn-outline btn-sm" onclick="adminPost('gig_status', {id: <?= (int)$g['id'] ?>, status: 'rejected'})">Reject</button>
                       <button type="button" class="btn btn-rose btn-sm" onclick="adminPost('gig_delete', {id: <?= (int)$g['id'] ?>}, 'Delete gig?')">
                         <span class="ms ms-sm">delete</span>
                       </button>
@@ -629,9 +655,9 @@ require_once __DIR__ . '/includes/header.php';
       <div class="field"><label>Email</label><input type="email" name="email" class="control" required></div>
       <div class="form-row-2">
         <div class="field"><label>Password</label><input type="password" name="password" class="control" minlength="6" placeholder="Min 6 chars" required></div>
-        <div class="field"><label>Role</label><select name="role" class="control"><option value="buyer">Buyer</option><option value="seller">Seller</option><option value="admin">Admin</option></select></div>
+        <div class="field"><label>Role</label><select name="role" id="cuRole" class="control" onchange="toggleCuWallet(this.value)"><option value="buyer">Buyer</option><option value="seller">Seller</option><option value="admin">Admin</option></select></div>
       </div>
-      <div class="field"><label>Initial Wallet ($)</label><input type="number" name="wallet_balance" class="control" value="500"></div>
+      <div class="field" id="cuWalletWrap"><label>Initial Wallet ($)</label><input type="number" name="wallet_balance" class="control" value="0"></div>
       <button type="submit" class="btn btn-primary btn-lg">Create User</button>
     </form>
   </div>
@@ -647,15 +673,16 @@ require_once __DIR__ . '/includes/header.php';
     <form id="adminEditUserForm" class="form-grid">
       <input type="hidden" name="id" id="euId">
       <div class="form-row-2">
-        <div class="field"><label>Role</label><select name="role" id="euRole" class="control"><option value="buyer">Buyer</option><option value="seller">Seller</option><option value="admin">Admin</option></select></div>
-        <div class="field"><label>Status</label><select name="status" id="euStatus" class="control"><option value="active">Active</option><option value="suspended">Suspended</option><option value="banned">Banned</option></select></div>
+        <div class="field"><label>Role</label><select name="role" id="euRole" class="control" onchange="toggleEuWallet(this.value)"><option value="buyer">Buyer</option><option value="seller">Seller</option><option value="admin">Admin</option></select></div>
+        <div class="field"><label>Status</label><select name="status" id="euStatus" class="control"><option value="active">Active</option><option value="suspended">Inactive (Suspended)</option><option value="banned">Banned</option></select></div>
       </div>
       <div class="form-row-2">
-        <div class="field"><label>Seller Level</label><select name="seller_level" id="euLevel" class="control"><option value="new">New</option><option value="rising">Rising</option><option value="top_rated">Top Rated</option><option value="pro">Pro</option></select></div>
-        <div class="field"><label>Wallet Balance ($)</label><input type="number" step="0.01" name="wallet_balance" id="euWallet" class="control"></div>
+        <div class="field"><label id="euLevelLabel">Level / Badge</label><select name="seller_level" id="euLevel" class="control"><option value="new">New</option><option value="rising">Rising</option><option value="top_rated">Top Rated</option><option value="pro">Pro (Verified Badge)</option></select></div>
+        <div class="field" id="euWalletWrap"><label>Wallet Balance ($)</label><input type="number" step="0.01" name="wallet_balance" id="euWallet" class="control"></div>
       </div>
       <label style="display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;cursor:pointer;">
-        <input type="checkbox" name="is_verified" id="euVerified" value="1"> Verified Badge
+        <input type="checkbox" name="is_verified" id="euVerified" value="1">
+        <span>Verified Badge (Pro)</span>
       </label>
       <button type="submit" class="btn btn-primary btn-lg">Update User</button>
     </form>
@@ -675,7 +702,7 @@ require_once __DIR__ . '/includes/header.php';
       <div class="field"><label>Title</label><input type="text" name="title" id="egTitle" class="control" required></div>
       <div class="form-row-2">
         <div class="field"><label>Category</label><select name="category_id" id="egCat" class="control"><?php foreach ($allCats as $ac): ?><option value="<?= (int)$ac['id'] ?>"><?= e($ac['name']) ?></option><?php endforeach; ?></select></div>
-        <div class="field"><label>Status</label><select name="status" id="egStatus" class="control"><option value="active">Active</option><option value="pending">Pending</option><option value="paused">Paused</option><option value="rejected">Rejected</option></select></div>
+        <div class="field"><label>Status</label><select name="status" id="egStatus" class="control"><option value="active">Active</option><option value="paused">Inactive (Paused)</option><option value="pending">Pending</option><option value="rejected">Rejected</option></select></div>
       </div>
       <div class="form-row-2">
         <div class="field"><label>Price ($)</label><input type="number" step="0.01" name="price" id="egPrice" class="control" required></div>
@@ -729,6 +756,16 @@ async function adminPost(action, data = {}, confirmMsg = '') {
   }
 }
 
+function toggleCuWallet(role) {
+  const wrap = document.getElementById('cuWalletWrap');
+  if (wrap) wrap.style.display = role === 'admin' ? 'none' : 'block';
+}
+
+function toggleEuWallet(role) {
+  const wrap = document.getElementById('euWalletWrap');
+  if (wrap) wrap.style.display = role === 'admin' ? 'none' : 'block';
+}
+
 function openUserEdit(u) {
   document.getElementById('editUserTitle').textContent = u.name;
   document.getElementById('euId').value = u.id;
@@ -736,9 +773,25 @@ function openUserEdit(u) {
   document.getElementById('euStatus').value = u.status;
   document.getElementById('euLevel').value = u.seller_level;
   document.getElementById('euWallet').value = u.wallet_balance;
-  document.getElementById('euVerified').checked = Number(u.is_verified) === 1;
+  document.getElementById('euVerified').checked = (u.seller_level === 'pro' && Number(u.is_verified) === 1);
+  const lvlLabel = document.getElementById('euLevelLabel');
+  if (lvlLabel) lvlLabel.textContent = u.role === 'buyer' ? 'Buyer Level / Badge' : 'Seller Level / Badge';
+  toggleEuWallet(u.role);
   openModal('adminEditUserModal');
 }
+
+document.getElementById('euLevel')?.addEventListener('change', (e) => {
+  const verifiedCheckbox = document.getElementById('euVerified');
+  if (verifiedCheckbox) verifiedCheckbox.checked = (e.target.value === 'pro');
+});
+
+document.getElementById('euVerified')?.addEventListener('change', (e) => {
+  const euLevel = document.getElementById('euLevel');
+  if (euLevel) {
+    if (e.target.checked) euLevel.value = 'pro';
+    else if (euLevel.value === 'pro') euLevel.value = 'new';
+  }
+});
 
 document.getElementById('adminEditUserForm')?.addEventListener('submit', async (e) => {
   e.preventDefault();

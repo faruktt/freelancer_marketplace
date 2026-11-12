@@ -76,7 +76,7 @@ require_once __DIR__ . '/includes/header.php';
     <div style="display:grid;gap:6px;max-height:360px;overflow-y:auto;">
       <?php foreach ($peers as $p): ?>
         <button type="button" class="thread-item" style="border:1px solid var(--line);background:var(--surface);width:100%;text-align:left;" onclick="startChat(<?= (int)$p['id'] ?>)">
-          <img src="<?= e($p['avatar'] ?: 'assets/images/avatar-1.jpg') ?>" class="avatar avatar-md" alt="">
+          <img src="<?= e(avatar_url($p['avatar'])) ?>" class="avatar avatar-md" alt="">
           <div style="flex:1;min-width:0;">
             <div style="font-weight:700;font-size:13px;"><?= e($p['name']) ?></div>
             <div class="muted truncate" style="font-size:11.5px;"><?= e($p['title'] ?: ucfirst($p['role'])) ?></div>
@@ -135,12 +135,15 @@ require_once __DIR__ . '/includes/header.php';
     threadList.innerHTML = list.map(t => `
       <div class="thread-item ${Number(t.id) === Number(activeId) ? 'active' : ''}" onclick="selectThread(${t.id})">
         <div class="avatar-wrap">
-          <img src="${esc(t.peer_avatar || 'assets/images/avatar-1.jpg')}" class="avatar avatar-md" alt="">
+          <img src="${esc(t.peer_avatar || 'assets/images/default-avatar.svg')}" class="avatar avatar-md" alt="">
           ${t.is_online ? '<span class="online-dot"></span>' : ''}
         </div>
         <div style="flex:1;min-width:0;">
           <div style="display:flex;justify-content:space-between;align-items:center;gap:6px;">
-            <strong style="font-size:13px;" class="truncate">${esc(t.peer_name)}</strong>
+            <strong style="font-size:13px;display:inline-flex;align-items:center;gap:3px;" class="truncate">
+              <span>${esc(t.peer_name)}</span>
+              ${t.peer_level === 'pro' && Number(t.peer_verified) === 1 ? '<span class="ms ms-sm ms-fill" style="color:var(--primary);font-size:13px;" title="Pro Verified">verified</span>' : ''}
+            </strong>
             <span class="muted" style="font-size:11px;flex-shrink:0;">${esc(t.time_ago)}</span>
           </div>
           <div style="display:flex;justify-content:space-between;align-items:center;gap:6px;margin-top:2px;">
@@ -157,11 +160,14 @@ require_once __DIR__ . '/includes/header.php';
     chatHeader.innerHTML = `
       <div style="display:flex;align-items:center;gap:10px;min-width:0;">
         <div class="avatar-wrap">
-          <img src="${esc(t.peer_avatar || 'assets/images/avatar-1.jpg')}" class="avatar avatar-md" alt="">
+          <img src="${esc(t.peer_avatar || 'assets/images/default-avatar.svg')}" class="avatar avatar-md" alt="">
           ${t.is_online ? '<span class="online-dot"></span>' : ''}
         </div>
         <div style="min-width:0;">
-          <a href="profile.php?u=${esc(t.peer_username)}" style="font-weight:700;font-size:14px;">${esc(t.peer_name)}</a>
+          <div style="display:flex;align-items:center;gap:4px;">
+            <a href="profile.php?u=${esc(t.peer_username)}" style="font-weight:700;font-size:14px;">${esc(t.peer_name)}</a>
+            ${t.peer_level === 'pro' && Number(t.peer_verified) === 1 ? '<span class="ms ms-sm ms-fill" style="color:var(--primary);font-size:14px;" title="Pro Verified">verified</span>' : ''}
+          </div>
           <div class="muted" style="font-size:11.5px;">${t.is_online ? 'Online now' : esc(t.peer_title || t.peer_role)}</div>
         </div>
       </div>

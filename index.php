@@ -130,10 +130,10 @@ require_once __DIR__ . '/includes/header.php';
           <div class="gig-body">
             <div class="gig-seller">
               <a href="profile.php?u=<?= e($g['seller_username']) ?>" class="gig-seller-info">
-                <img src="<?= e($g['seller_avatar'] ?: 'assets/images/avatar-1.jpg') ?>" alt="" class="avatar">
+                <img src="<?= e(avatar_url($g['seller_avatar'])) ?>" alt="" class="avatar">
                 <span class="truncate"><?= e($g['seller_name']) ?></span>
-                <?php if ((int)$g['is_verified'] === 1): ?>
-                  <span class="ms ms-sm ms-fill" style="color:var(--primary);" title="Verified">verified</span>
+                <?php if ($g['seller_level'] === 'pro' && (int)$g['is_verified'] === 1): ?>
+                  <span class="ms ms-sm ms-fill" style="color:var(--primary);" title="Pro Verified">verified</span>
                 <?php endif; ?>
               </a>
               <span class="badge badge-slate"><?= e(seller_level_label($g['seller_level'])) ?></span>
@@ -217,9 +217,9 @@ window.onMarketplaceHome = true;
           <div class="gig-body">
             <div class="gig-seller">
               <a href="profile.php?u=${esc(g.seller_username)}" class="gig-seller-info">
-                <img src="${esc(g.seller_avatar || 'assets/images/avatar-1.jpg')}" alt="" class="avatar">
+                <img src="${esc(g.seller_avatar || 'assets/images/default-avatar.svg')}" alt="" class="avatar">
                 <span class="truncate">${esc(g.seller_name)}</span>
-                ${Number(g.is_verified) === 1 ? '<span class="ms ms-sm ms-fill" style="color:var(--primary);">verified</span>' : ''}
+                ${(g.seller_level === 'pro' && Number(g.is_verified) === 1) ? '<span class="ms ms-sm ms-fill" style="color:var(--primary);" title="Pro Verified">verified</span>' : ''}
               </a>
               <span class="badge badge-slate">${esc(levelMap[g.seller_level] || 'Seller')}</span>
             </div>

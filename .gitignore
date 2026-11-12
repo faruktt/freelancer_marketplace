@@ -8,6 +8,7 @@ uploads/*
 
 # Logs & OS junk
 *.log
+*.zip
 .DS_Store
 Thumbs.db
 desktop.ini

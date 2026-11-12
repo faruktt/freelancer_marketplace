@@ -22,8 +22,14 @@ switch ($action) {
         $role = in_array($_POST['role'] ?? '', ['buyer', 'seller', 'admin'], true) ? $_POST['role'] : 'buyer';
         $status = in_array($_POST['status'] ?? '', ['active', 'suspended', 'banned'], true) ? $_POST['status'] : 'active';
         $level = in_array($_POST['seller_level'] ?? '', ['new', 'rising', 'top_rated', 'pro'], true) ? $_POST['seller_level'] : 'new';
-        $verified = !empty($_POST['is_verified']) ? 1 : 0;
-        $wallet = max(0, (float)($_POST['wallet_balance'] ?? 0));
+        $verifiedCheckbox = !empty($_POST['is_verified']);
+        if ($level === 'pro' || $verifiedCheckbox) {
+            $level = 'pro';
+            $verified = 1;
+        } else {
+            $verified = 0;
+        }
+        $wallet = $role === 'admin' ? 0.00 : max(0, (float)($_POST['wallet_balance'] ?? 0));
 
         if ($uid === $adminId && ($role !== 'admin' || $status !== 'active')) {
             json_out(['ok' => false, 'error' => 'Cannot demote or suspend yourself'], 422);
@@ -39,7 +45,7 @@ switch ($action) {
         $email = strtolower(trim((string)($_POST['email'] ?? '')));
         $pass = (string)($_POST['password'] ?? '');
         $role = in_array($_POST['role'] ?? '', ['buyer', 'seller', 'admin'], true) ? $_POST['role'] : 'buyer';
-        $wallet = max(0, (float)($_POST['wallet_balance'] ?? 500));
+        $wallet = $role === 'admin' ? 0.00 : max(0, (float)($_POST['wallet_balance'] ?? 0));
 
         if (mb_strlen($name) < 2 || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
             json_out(['ok' => false, 'error' => 'Valid name and email required'], 422);
@@ -55,10 +61,20 @@ switch ($action) {
 
         $username = slugify(explode('@', $email)[0]) . random_int(10, 99);
         $hash = password_hash($pass, PASSWORD_BCRYPT);
-        $avatar = 'assets/images/avatar-' . random_int(1, 6) . '.jpg';
-        $pdo->prepare('INSERT INTO users (name, username, email, password_hash, role, avatar, wallet_balance, is_verified) VALUES (?, ?, ?, ?, ?, ?, ?, 1)')
+        $avatar = null;
+        $pdo->prepare('INSERT INTO users (name, username, email, password_hash, role, avatar, wallet_balance, is_verified, seller_level) VALUES (?, ?, ?, ?, ?, ?, ?, 0, "new")')
             ->execute([$name, $username, $email, $hash, $role, $avatar, $wallet]);
         json_out(['ok' => true, 'message' => 'User created']);
+    }
+
+    case 'user_status': {
+        $uid = (int)($_POST['id'] ?? 0);
+        $status = in_array($_POST['status'] ?? '', ['active', 'suspended', 'banned'], true) ? $_POST['status'] : 'active';
+        if ($uid === $adminId && $status !== 'active') {
+            json_out(['ok' => false, 'error' => 'Cannot deactivate your own admin account'], 422);
+        }
+        $pdo->prepare('UPDATE users SET status = ? WHERE id = ?')->execute([$status, $uid]);
+        json_out(['ok' => true, 'message' => 'User status updated to ' . ($status === 'active' ? 'Active' : 'Inactive')]);
     }
 
     case 'user_delete': {
@@ -77,7 +93,7 @@ switch ($action) {
             json_out(['ok' => false, 'error' => 'Invalid status'], 422);
         }
         $pdo->prepare('UPDATE gigs SET status = ? WHERE id = ?')->execute([$status, $gigId]);
-        json_out(['ok' => true, 'message' => 'Gig status updated']);
+        json_out(['ok' => true, 'message' => 'Gig status updated to ' . ($status === 'active' ? 'Active' : 'Inactive (' . ucfirst($status) . ')')]);
     }
 
     case 'gig_feature': {

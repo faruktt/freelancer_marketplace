@@ -3,7 +3,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/includes/auth.php';
 
-$me = require_role('seller', 'seller-login.php');
+$me = require_role('seller', 'login.php');
 $uid = (int)$me['id'];
 $pdo = db();
 
@@ -20,7 +20,7 @@ $sellerGigsStmt->execute([$uid]);
 $sellerGigs = $sellerGigsStmt->fetchAll();
 
 $sellerOrdersStmt = $pdo->prepare('
-    SELECT o.*, u.name AS peer_name, u.username AS peer_username, u.avatar AS peer_avatar
+    SELECT o.*, u.name AS peer_name, u.username AS peer_username, u.avatar AS peer_avatar, u.seller_level AS peer_level, u.is_verified AS peer_verified
     FROM orders o
     JOIN users u ON u.id = o.buyer_id
     WHERE o.seller_id = ?
@@ -128,8 +128,12 @@ require_once __DIR__ . '/includes/header.php';
                 <td>
                   <div style="font-weight:700;max-width:280px;" class="truncate"><?= e($o['gig_title']) ?></div>
                   <div class="muted" style="font-size:12px;display:flex;align-items:center;gap:5px;margin-top:2px;">
-                    <img src="<?= e($o['peer_avatar'] ?: 'assets/images/avatar-5.jpg') ?>" alt="" class="avatar" style="width:16px;height:16px;">
-                    <span><?= e($o['peer_name']) ?> · <?= e(time_ago($o['created_at'])) ?></span>
+                    <img src="<?= e(avatar_url($o['peer_avatar'])) ?>" alt="" class="avatar" style="width:16px;height:16px;">
+                    <span><?= e($o['peer_name']) ?></span>
+                    <?php if (($o['peer_level'] ?? '') === 'pro' && (int)($o['peer_verified'] ?? 0) === 1): ?>
+                      <span class="ms ms-sm ms-fill" style="color:var(--primary);font-size:14px;" title="Pro Verified">verified</span>
+                    <?php endif; ?>
+                    <span>· <?= e(time_ago($o['created_at'])) ?></span>
                   </div>
                 </td>
                 <td><span class="badge <?= $stClass ?>"><span class="ms ms-sm"><?= $stIcon ?></span><?= $stLabel ?></span></td>
@@ -266,8 +270,9 @@ require_once __DIR__ . '/includes/header.php';
       </div>
       <div class="form-row-2">
         <div class="field">
-          <label>Category</label>
+          <label>Category <span style="font-size:11.5px;color:var(--muted);">(Admin created categories)</span></label>
           <select name="category_id" id="gigCatInput" class="control" required>
+            <option value="" disabled selected>-- Select a Category --</option>
             <?php foreach ($categories as $cat): ?>
               <option value="<?= (int)$cat['id'] ?>"><?= e($cat['name']) ?></option>
             <?php endforeach; ?>
@@ -381,7 +386,20 @@ async function openGigForm(gigId = 0) {
   const form = document.getElementById('gigForm');
   form.reset();
   document.getElementById('gigIdInput').value = '';
+  document.getElementById('gigCatInput').value = '';
   document.getElementById('gigModalTitle').textContent = gigId ? 'Edit Gig' : 'Post New Gig';
+
+  // Always refresh categories from server to get latest admin-created categories
+  try {
+    const catRes = await apiGet('api/gigs.php?action=categories');
+    if (catRes.ok && Array.isArray(catRes.categories)) {
+      const select = document.getElementById('gigCatInput');
+      const curVal = select.value;
+      select.innerHTML = '<option value="" disabled selected>-- Select a Category --</option>' +
+        catRes.categories.map(c => `<option value="${c.id}">${esc(c.name)}</option>`).join('');
+      if (curVal) select.value = curVal;
+    }
+  } catch (err) {}
 
   if (gigId) {
     const res = await apiGet(`api/gigs.php?action=get&id=${gigId}`);

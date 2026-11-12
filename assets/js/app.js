@@ -3,6 +3,8 @@
 
   const csrf = () => document.querySelector('meta[name="csrf-token"]')?.content || '';
 
+  window.esc = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+
   window.toast = (message, type = 'ok') => {
     let stack = document.getElementById('toast-stack');
     if (!stack) {
@@ -44,7 +46,7 @@
     });
     const json = await res.json().catch(() => ({ ok: false, error: 'Server error' }));
     if (!res.ok && json.code === 'UNAUTHENTICATED') {
-      openAuthModal('login');
+      window.location.href = 'login.php';
     }
     return json;
   };
@@ -65,20 +67,7 @@
   };
 
   window.openAuthModal = (tab = 'login') => {
-    openModal('authModal');
-    switchAuthTab(tab);
-  };
-
-  window.switchAuthTab = (tab) => {
-    document.querySelectorAll('[data-auth-tab]').forEach(btn => {
-      btn.classList.toggle('active', btn.dataset.authTab === tab);
-    });
-    const loginPane = document.getElementById('authLoginPane');
-    const regPane = document.getElementById('authRegisterPane');
-    if (loginPane && regPane) {
-      loginPane.style.display = tab === 'login' ? 'grid' : 'none';
-      regPane.style.display = tab === 'register' ? 'grid' : 'none';
-    }
+    window.location.href = tab === 'register' ? 'register.php' : 'login.php';
   };
 
   window.logoutUser = async () => {

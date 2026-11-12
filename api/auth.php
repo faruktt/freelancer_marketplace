@@ -28,7 +28,7 @@ switch ($action) {
             json_out(['ok' => false, 'error' => 'Account is ' . $user['status'] . '. Contact support.'], 403);
         }
         if ($expectedRole !== '' && in_array($expectedRole, ['admin', 'buyer', 'seller'], true) && $user['role'] !== $expectedRole) {
-            json_out(['ok' => false, 'error' => 'This login page is for ' . ucfirst($expectedRole) . ' accounts only.'], 403);
+            json_out(['ok' => false, 'error' => 'This account is a ' . ucfirst($user['role']) . '. Please click the ' . ucfirst($user['role']) . ' button above.'], 403);
         }
         login_user((int)$user['id']);
         $redirect = panel_url($user);
@@ -70,8 +70,7 @@ switch ($action) {
             $username = $baseUser . $i++;
         }
 
-        $avatarIdx = random_int(1, 6);
-        $avatarPath = 'assets/images/avatar-' . $avatarIdx . '.jpg';
+        $avatarPath = null;
         if (!empty($_FILES['avatar']) && ($_FILES['avatar']['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_NO_FILE) {
             $up = handle_upload($_FILES['avatar'], 'avatars', 'image');
             if (!$up['ok']) {
@@ -81,7 +80,7 @@ switch ($action) {
         }
 
         $hash = password_hash($pass, PASSWORD_BCRYPT);
-        $ins = $pdo->prepare('INSERT INTO users (name, username, email, password_hash, role, avatar, title, wallet_balance) VALUES (?, ?, ?, ?, ?, ?, ?, 500.00)');
+        $ins = $pdo->prepare('INSERT INTO users (name, username, email, password_hash, role, avatar, title, wallet_balance) VALUES (?, ?, ?, ?, ?, ?, ?, 0.00)');
         $ins->execute([
             $name,
             $username,
@@ -101,7 +100,7 @@ switch ($action) {
     }
 
     case 'topup': {
-        $user = require_role('buyer', 'buyer-login.php', true);
+        $user = require_role('buyer', 'login.php', true);
         $amount = (float)($_POST['amount'] ?? 250);
         if ($amount < 10 || $amount > 5000) {
             json_out(['ok' => false, 'error' => 'Amount must be between $10 and $5000'], 422);

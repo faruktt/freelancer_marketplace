@@ -93,14 +93,16 @@ $csrf = csrf_token();
           </a>
         <?php endif; ?>
 
+        <?php if ($me['role'] !== 'admin'): ?>
         <span class="wallet-chip" title="Wallet Balance">
           <span class="ms ms-sm">account_balance_wallet</span>
           <span id="navWalletVal"><?= money($me['wallet_balance']) ?></span>
         </span>
+        <?php endif; ?>
 
         <div class="user-menu" id="userMenuWrap">
           <button type="button" class="avatar-btn" id="userMenuBtn">
-            <img src="<?= e($me['avatar'] ?: 'assets/images/avatar-1.jpg') ?>" alt="<?= e($me['name']) ?>" class="avatar">
+            <img src="<?= e(avatar_url($me['avatar'])) ?>" alt="<?= e($me['name']) ?>" class="avatar">
             <span style="font-size:12.5px;font-weight:700;max-width:95px;" class="truncate"><?= e($me['name']) ?></span>
             <span class="ms ms-sm">expand_more</span>
           </button>
@@ -131,8 +133,12 @@ $csrf = csrf_token();
           </div>
         </div>
       <?php else: ?>
-        <button type="button" class="btn btn-ghost btn-sm" onclick="openAuthModal('login')">Sign In</button>
-        <button type="button" class="btn btn-primary btn-sm" onclick="openAuthModal('register')">Join Free</button>
+        <?php if (($activeNav ?? '') !== 'login'): ?>
+          <a href="login.php" class="btn btn-ghost btn-sm">Sign In</a>
+        <?php endif; ?>
+        <?php if (($activeNav ?? '') !== 'register'): ?>
+          <a href="register.php" class="btn btn-primary btn-sm">Join Free</a>
+        <?php endif; ?>
       <?php endif; ?>
     </nav>
   </div>

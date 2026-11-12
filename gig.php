@@ -82,12 +82,12 @@ require_once __DIR__ . '/includes/header.php';
 
         <div style="display:flex;align-items:center;flex-wrap:wrap;gap:14px;padding-bottom:14px;border-bottom:1px solid var(--line);margin-bottom:14px;">
           <a href="profile.php?u=<?= e($gig['seller_username']) ?>" style="display:flex;align-items:center;gap:9px;">
-            <img src="<?= e($gig['seller_avatar'] ?: 'assets/images/avatar-1.jpg') ?>" alt="" class="avatar avatar-md">
+            <img src="<?= e(avatar_url($gig['seller_avatar'])) ?>" alt="" class="avatar avatar-md">
             <div>
               <div style="display:flex;align-items:center;gap:4px;font-weight:700;font-size:13.5px;">
                 <?= e($gig['seller_name']) ?>
-                <?php if ((int)$gig['is_verified'] === 1): ?>
-                  <span class="ms ms-sm ms-fill" style="color:var(--primary);">verified</span>
+                <?php if ($gig['seller_level'] === 'pro' && (int)$gig['is_verified'] === 1): ?>
+                  <span class="ms ms-sm ms-fill" style="color:var(--primary);" title="Pro Verified">verified</span>
                 <?php endif; ?>
               </div>
               <div class="muted" style="font-size:12px;"><?= e($gig['seller_title'] ?: seller_level_label($gig['seller_level'])) ?></div>
@@ -124,10 +124,13 @@ require_once __DIR__ . '/includes/header.php';
       <div class="card card-pad">
         <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
           <div style="display:flex;align-items:center;gap:12px;">
-            <img src="<?= e($gig['seller_avatar'] ?: 'assets/images/avatar-1.jpg') ?>" alt="" class="avatar avatar-lg">
+            <img src="<?= e(avatar_url($gig['seller_avatar'])) ?>" alt="" class="avatar avatar-lg">
             <div>
               <div style="display:flex;align-items:center;gap:6px;font-size:15px;font-weight:800;">
                 <a href="profile.php?u=<?= e($gig['seller_username']) ?>"><?= e($gig['seller_name']) ?></a>
+                <?php if ($gig['seller_level'] === 'pro' && (int)$gig['is_verified'] === 1): ?>
+                  <span class="ms ms-sm ms-fill" style="color:var(--primary);" title="Pro Verified">verified</span>
+                <?php endif; ?>
                 <span class="badge badge-indigo"><?= e(seller_level_label($gig['seller_level'])) ?></span>
               </div>
               <div class="muted" style="font-size:12.5px;margin-top:2px;">
@@ -161,7 +164,7 @@ require_once __DIR__ . '/includes/header.php';
               <div style="padding-top:12px;border-top:1px solid var(--line);">
                 <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
                   <div style="display:flex;align-items:center;gap:8px;">
-                    <img src="<?= e($r['buyer_avatar'] ?: 'assets/images/avatar-5.jpg') ?>" alt="" class="avatar">
+                    <img src="<?= e(avatar_url($r['buyer_avatar'])) ?>" alt="" class="avatar">
                     <strong style="font-size:13px;"><?= e($r['buyer_name']) ?></strong>
                   </div>
                   <div style="display:flex;align-items:center;gap:6px;">
@@ -220,13 +223,13 @@ require_once __DIR__ . '/includes/header.php';
             </a>
           <?php elseif ($me && $me['role'] !== 'buyer'): ?>
             <div class="muted" style="font-size:12px;padding:10px 12px;border-radius:10px;background:var(--surface-2);border:1px solid var(--line);text-align:center;">
-              Sign in with a <a href="buyer-login.php" style="color:var(--primary);font-weight:700;">Buyer account</a> to place orders.
+              Sign in with a <a href="login.php" style="color:var(--primary);font-weight:700;">Buyer account</a> to place orders.
             </div>
           <?php else: ?>
-            <button type="button" class="btn btn-primary btn-lg" onclick="<?= $me ? "openModal('orderModal')" : "window.location.href='buyer-login.php'" ?>">
+            <button type="button" class="btn btn-primary btn-lg" onclick="<?= $me ? "openModal('orderModal')" : "window.location.href='login.php'" ?>">
               <span class="ms ms-sm">shopping_bag</span> Continue (<?= money_short($gig['price']) ?>)
             </button>
-            <button type="button" class="btn btn-outline" onclick="<?= $me ? 'startChat(' . (int)$gig['seller_id'] . ', ' . (int)$gig['id'] . ')' : "openAuthModal('login')" ?>">
+            <button type="button" class="btn btn-outline" onclick="<?= $me ? 'startChat(' . (int)$gig['seller_id'] . ', ' . (int)$gig['id'] . ')' : "window.location.href='login.php'" ?>">
               <span class="ms ms-sm">chat_bubble</span> Message Seller
             </button>
           <?php endif; ?>

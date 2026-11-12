@@ -20,6 +20,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
                    CASE WHEN c.user_one_id = ? THEN c.user_two_id ELSE c.user_one_id END AS peer_id,
                    u.name AS peer_name, u.username AS peer_username, u.avatar AS peer_avatar,
                    u.role AS peer_role, u.title AS peer_title, u.last_seen_at AS peer_seen,
+                   u.seller_level AS peer_level, u.is_verified AS peer_verified,
                    g.title AS gig_title, o.order_code,
                    (SELECT body FROM messages m WHERE m.conversation_id = c.id ORDER BY m.id DESC LIMIT 1) AS last_body,
                    (SELECT attachment_name FROM messages m WHERE m.conversation_id = c.id ORDER BY m.id DESC LIMIT 1) AS last_attachment,

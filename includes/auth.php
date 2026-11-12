@@ -85,7 +85,7 @@ function panel_url(?array $user = null): string
     };
 }
 
-function require_login(bool $isApi = false, string $loginUrl = 'index.php?auth=login'): array
+function require_login(bool $isApi = false, string $loginUrl = 'login.php'): array
 {
     $user = current_user();
     if (!$user) {
@@ -98,7 +98,7 @@ function require_login(bool $isApi = false, string $loginUrl = 'index.php?auth=l
     return $user;
 }
 
-function require_role(string $role, string $loginUrl = 'index.php?auth=login', bool $isApi = false): array
+function require_role(string $role, string $loginUrl = 'login.php', bool $isApi = false): array
 {
     $user = require_login($isApi, $loginUrl);
     if ($user['role'] !== $role) {
@@ -113,6 +113,6 @@ function require_role(string $role, string $loginUrl = 'index.php?auth=login', b
 
 function require_admin(bool $isApi = false): array
 {
-    return require_role('admin', 'admin-login.php', $isApi);
+    return require_role('admin', 'login.php', $isApi);
 }
 

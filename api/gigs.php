@@ -8,6 +8,11 @@ $method = $_SERVER['REQUEST_METHOD'];
 if ($method === 'GET') {
     $action = $_GET['action'] ?? 'list';
 
+    if ($action === 'categories') {
+        $cats = db()->query('SELECT id, name, slug, icon, accent_color FROM categories WHERE is_active = 1 ORDER BY sort_order ASC, id ASC')->fetchAll(PDO::FETCH_ASSOC);
+        json_out(['ok' => true, 'categories' => $cats]);
+    }
+
     if ($action === 'get') {
         $id = (int)($_GET['id'] ?? 0);
         $stmt = db()->prepare('SELECT g.*, c.name AS category_name, c.slug AS category_slug FROM gigs g JOIN categories c ON c.id = g.category_id WHERE g.id = ?');
@@ -143,6 +148,11 @@ switch ($action) {
         }
         if ($catId <= 0) {
             json_out(['ok' => false, 'error' => 'Select a valid category'], 422);
+        }
+        $catCheck = $pdo->prepare('SELECT id FROM categories WHERE id = ? AND is_active = 1');
+        $catCheck->execute([$catId]);
+        if (!$catCheck->fetchColumn()) {
+            json_out(['ok' => false, 'error' => 'Please select a valid active category from the admin panel list'], 422);
         }
         if ($price < $minPrice || $price > $maxPrice) {
             json_out(['ok' => false, 'error' => "Price must be between \${$minPrice} and \${$maxPrice}"], 422);

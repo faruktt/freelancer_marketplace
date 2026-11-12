@@ -10,8 +10,8 @@ $pdo = db();
 
 $stmt = $pdo->prepare('
     SELECT o.*,
-           b.name AS buyer_name, b.username AS buyer_username, b.avatar AS buyer_avatar,
-           s.name AS seller_name, s.username AS seller_username, s.avatar AS seller_avatar,
+           b.name AS buyer_name, b.username AS buyer_username, b.avatar AS buyer_avatar, b.seller_level AS buyer_level, b.is_verified AS buyer_verified,
+           s.name AS seller_name, s.username AS seller_username, s.avatar AS seller_avatar, s.seller_level AS seller_level, s.is_verified AS seller_verified,
            g.cover_image
     FROM orders o
     JOIN users b ON b.id = o.buyer_id
@@ -102,12 +102,18 @@ require_once __DIR__ . '/includes/header.php';
             <a href="gig.php?id=<?= (int)$order['gig_id'] ?>" style="font-weight:700;font-size:14.5px;"><?= e($order['gig_title']) ?></a>
             <div class="muted" style="font-size:12px;margin-top:4px;display:flex;align-items:center;flex-wrap:wrap;gap:10px;">
               <a href="profile.php?u=<?= e($order['buyer_username']) ?>" style="display:inline-flex;align-items:center;gap:5px;">
-                <img src="<?= e($order['buyer_avatar'] ?: 'assets/images/avatar-5.jpg') ?>" alt="" class="avatar" style="width:18px;height:18px;">
+                <img src="<?= e(avatar_url($order['buyer_avatar'])) ?>" alt="" class="avatar" style="width:18px;height:18px;">
                 <span>Buyer: <strong style="color:var(--ink);"><?= e($order['buyer_name']) ?></strong></span>
+                <?php if (($order['buyer_level'] ?? '') === 'pro' && (int)($order['buyer_verified'] ?? 0) === 1): ?>
+                  <span class="ms ms-sm ms-fill" style="color:var(--primary);font-size:14px;" title="Pro Verified">verified</span>
+                <?php endif; ?>
               </a>
               <a href="profile.php?u=<?= e($order['seller_username']) ?>" style="display:inline-flex;align-items:center;gap:5px;">
-                <img src="<?= e($order['seller_avatar'] ?: 'assets/images/avatar-1.jpg') ?>" alt="" class="avatar" style="width:18px;height:18px;">
+                <img src="<?= e(avatar_url($order['seller_avatar'])) ?>" alt="" class="avatar" style="width:18px;height:18px;">
                 <span>Seller: <strong style="color:var(--ink);"><?= e($order['seller_name']) ?></strong></span>
+                <?php if (($order['seller_level'] ?? '') === 'pro' && (int)($order['seller_verified'] ?? 0) === 1): ?>
+                  <span class="ms ms-sm ms-fill" style="color:var(--primary);font-size:14px;" title="Pro Verified">verified</span>
+                <?php endif; ?>
               </a>
             </div>
           </div>

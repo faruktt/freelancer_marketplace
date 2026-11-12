@@ -53,7 +53,7 @@ require_once __DIR__ . '/includes/header.php';
     <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:16px;">
       <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
         <div class="avatar-edit-wrap">
-          <img id="profileAvatarImg" src="<?= e($profile['avatar'] ?: 'assets/images/avatar-1.jpg') ?>" alt="<?= e($profile['name']) ?>" class="avatar avatar-xl">
+          <img id="profileAvatarImg" src="<?= e(avatar_url($profile['avatar'])) ?>" alt="<?= e($profile['name']) ?>" class="avatar avatar-xl">
           <?php if ($isOwner): ?>
             <label class="avatar-cam-btn" title="Change profile photo">
               <span class="ms ms-sm" style="font-size:15px;">photo_camera</span>
@@ -64,13 +64,13 @@ require_once __DIR__ . '/includes/header.php';
         <div>
           <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
             <h1 style="margin:0;font-size:20px;font-weight:800;"><?= e($profile['name']) ?></h1>
-            <?php if ((int)$profile['is_verified'] === 1): ?>
-              <span class="ms ms-fill" style="color:var(--primary);" title="Verified">verified</span>
+            <?php if ($profile['seller_level'] === 'pro' && (int)$profile['is_verified'] === 1): ?>
+              <span class="ms ms-fill" style="color:var(--primary);" title="Pro Verified">verified</span>
             <?php endif; ?>
             <?php if ($profile['role'] === 'admin'): ?>
               <span class="badge badge-amber">Admin</span>
             <?php elseif ($profile['role'] === 'buyer'): ?>
-              <span class="badge badge-cyan">Buyer</span>
+              <span class="badge <?= $profile['seller_level'] === 'pro' ? 'badge-emerald' : 'badge-cyan' ?>"><?= $profile['seller_level'] === 'pro' ? 'Pro Buyer' : 'Buyer' ?></span>
             <?php else: ?>
               <span class="badge badge-indigo"><?= e(seller_level_label($profile['seller_level'])) ?></span>
             <?php endif; ?>
@@ -97,7 +97,7 @@ require_once __DIR__ . '/includes/header.php';
           </button>
           <a href="<?= e(panel_url($me)) ?>" class="btn btn-primary btn-sm"><?= ucfirst($me['role']) ?> Panel</a>
         <?php else: ?>
-          <button type="button" class="btn btn-primary" onclick="<?= $me ? 'startChat(' . $pid . ')' : "openAuthModal('login')" ?>">
+          <button type="button" class="btn btn-primary" onclick="<?= $me ? 'startChat(' . $pid . ')' : "window.location.href='login.php'" ?>">
             <span class="ms ms-sm">chat_bubble</span> Message <?= e(explode(' ', $profile['name'])[0]) ?>
           </button>
         <?php endif; ?>
@@ -148,7 +148,7 @@ require_once __DIR__ . '/includes/header.php';
           <div style="padding-top:10px;border-top:1px solid var(--line);">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
               <div style="display:flex;align-items:center;gap:8px;">
-                <img src="<?= e($r['buyer_avatar'] ?: 'assets/images/avatar-5.jpg') ?>" alt="" class="avatar">
+                <img src="<?= e(avatar_url($r['buyer_avatar'])) ?>" alt="" class="avatar">
                 <strong style="font-size:13px;"><?= e($r['buyer_name']) ?></strong>
                 <span class="muted" style="font-size:12px;">on <?= e($r['gig_title']) ?></span>
               </div>

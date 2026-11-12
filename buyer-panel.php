@@ -3,13 +3,13 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/includes/auth.php';
 
-$me = require_role('buyer', 'buyer-login.php');
+$me = require_role('buyer', 'login.php');
 $uid = (int)$me['id'];
 $pdo = db();
 
 $orderFilter = $_GET['status'] ?? '';
 $ordersStmt = $pdo->prepare('
-    SELECT o.*, u.name AS peer_name, u.username AS peer_username, u.avatar AS peer_avatar, g.cover_image
+    SELECT o.*, u.name AS peer_name, u.username AS peer_username, u.avatar AS peer_avatar, u.seller_level AS peer_level, u.is_verified AS peer_verified, g.cover_image
     FROM orders o
     JOIN users u ON u.id = o.seller_id
     LEFT JOIN gigs g ON g.id = o.gig_id
@@ -142,8 +142,11 @@ require_once __DIR__ . '/includes/header.php';
                     <a href="order.php?id=<?= (int)$o['id'] ?>"><?= e($o['gig_title']) ?></a>
                   </div>
                   <div class="muted" style="font-size:12px;display:flex;align-items:center;gap:5px;margin-top:2px;">
-                    <img src="<?= e($o['peer_avatar'] ?: 'assets/images/avatar-1.jpg') ?>" alt="" class="avatar" style="width:16px;height:16px;">
+                    <img src="<?= e(avatar_url($o['peer_avatar'])) ?>" alt="" class="avatar" style="width:16px;height:16px;">
                     <span><?= e($o['peer_name']) ?></span>
+                    <?php if (($o['peer_level'] ?? '') === 'pro' && (int)($o['peer_verified'] ?? 0) === 1): ?>
+                      <span class="ms ms-sm ms-fill" style="color:var(--primary);font-size:14px;" title="Pro Verified">verified</span>
+                    <?php endif; ?>
                   </div>
                 </td>
                 <td><span class="badge <?= $stClass ?>"><span class="ms ms-sm"><?= $stIcon ?></span><?= $stLabel ?></span></td>

@@ -426,6 +426,9 @@ main.page-main {
 .btn-rose { background: var(--rose-soft); color: var(--rose); border-color: #FECACA; }
 .btn-rose:hover { background: #FEE2E2; }
 
+.btn-amber { background: #FEF3C7; color: #B45309; border: 1px solid #FDE68A; }
+.btn-amber:hover { background: #FDE68A; }
+
 .icon-btn {
   width: 34px;
   height: 34px;
@@ -1146,6 +1149,10 @@ textarea.control { min-height: 82px; resize: vertical; }
   font-size: 12.5px;
   font-weight: 700;
   color: var(--muted);
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  font-family: inherit;
   transition: all .16s var(--ease);
 }
 .role-tab:hover { color: var(--ink); }

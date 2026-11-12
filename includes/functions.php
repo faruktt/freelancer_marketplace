@@ -96,6 +96,15 @@ function branding_asset_url(string $settingKey, bool $withVersion = true): strin
     return $withVersion ? ($path . '?v=' . filemtime($full)) : $path;
 }
 
+function avatar_url(?string $path): string
+{
+    $p = trim((string)$path);
+    if ($p !== '' && !str_contains($p, '..') && is_file(BASE_PATH . '/' . ltrim($p, '/'))) {
+        return $p;
+    }
+    return 'assets/images/default-avatar.svg';
+}
+
 function handle_upload(array $file, string $subdir, string $mode = 'image'): array
 {
     if (($file['error'] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_NO_FILE) {
